@@ -1,0 +1,12 @@
+[package]
+name = "naval"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# Compile can be optimized via suggestion here:
+#  https://bevyengine.org/learn/book/getting-started/setup/
+
+[dependencies]
+bevy = "0.6"
