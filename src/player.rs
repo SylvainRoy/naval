@@ -50,7 +50,6 @@ fn player_spawn(
                 translation: Vec3::new(BOAT_INIT_POSITION.0, BOAT_INIT_POSITION.1, BOAT_Z),
                 rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), BOAT_INIT_ANGLE),
                 scale: Vec3::splat(1.0),
-                ..Default::default()
             },
             ..Default::default()
         })
@@ -66,7 +65,6 @@ fn player_spawn(
                         translation: Vec3::new(CANON_POSITIONS.0, 0., WEAPON_Z),
                         rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), CANON_INIT_ANGLE),
                         scale: Vec3::new(1., 1., 1.),
-                        ..Default::default()
                     },
                     ..Default::default()
                 })
@@ -83,7 +81,6 @@ fn player_spawn(
                         translation: Vec3::new(CANON_POSITIONS.1, 0., WEAPON_Z),
                         rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), CANON_INIT_ANGLE),
                         scale: Vec3::new(1., 1., 1.),
-                        ..Default::default()
                     },
                     ..Default::default()
                 })
@@ -155,7 +152,7 @@ fn player_fire(
                     texture_atlas: sprite_materials.texture.clone(),
                     sprite: TextureAtlasSprite::new(sprite_materials.canonball_index),
                     transform: Transform {
-                        translation: translation,
+                        translation,
                         rotation: canon_gtf.rotation,
                         ..Default::default()
                     },

@@ -7,7 +7,9 @@ The game is built on top of Bevy and *will* be great (lots of work before that..
 
 ## Todo
 
-Background color could be: (0, 0.4118, .5804)
+- Background color could be: (0, 0.4118, .5804)
+- The dynamic window cannot work as it is. The the islands are spawn once and for all at startup!
+  - Reassess and potentially remove the 'system'.
 
 ## Roadmap
 

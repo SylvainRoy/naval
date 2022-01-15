@@ -2,11 +2,13 @@
 
 mod canonball;
 mod common;
+mod island;
 mod player;
 
 use bevy::prelude::*;
 use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
+use island::IslandPlugin;
 use player::PlayerPlugin;
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
@@ -39,7 +41,6 @@ fn setup(
         min: Vec2::new(0., 16.),
         max: Vec2::new(16., 32.),
     });
-
     let canonball_index = texture_atlas.add_texture(bevy::sprite::Rect {
         min: Vec2::new(16., 16.),
         max: Vec2::new(24., 24.),
@@ -48,6 +49,39 @@ fn setup(
         min: Vec2::new(24., 16.),
         max: Vec2::new(40., 24.),
     });
+    let bunker_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(80., 16.),
+        max: Vec2::new(96., 32.),
+    });
+    let ground1_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(0., 32.),
+        max: Vec2::new(16., 48.),
+    });
+    let ground2_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(16., 32.),
+        max: Vec2::new(32., 48.),
+    });
+    let ground3_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(32., 32.),
+        max: Vec2::new(48., 48.),
+    });
+    let ground4_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(48., 32.),
+        max: Vec2::new(64., 48.),
+    });
+    let ground5_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(64., 32.),
+        max: Vec2::new(80., 48.),
+    });
+    let ground6_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(80., 32.),
+        max: Vec2::new(96., 48.),
+    });
+    let mountain_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(0., 48.),
+        max: Vec2::new(16., 64.),
+    });
+
     let sprites_h = texture_atlases.add(texture_atlas);
     commands.insert_resource(SpriteMaterials {
         texture: sprites_h,
@@ -55,16 +89,24 @@ fn setup(
         canon_index,
         canonball_index,
         torpedo_index,
+        bunker_index,
+        ground1_index,
+        ground2_index,
+        ground3_index,
+        ground4_index,
+        ground5_index,
+        ground6_index,
+        mountain_index,
     });
 }
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::AQUAMARINE))
+        .insert_resource(ClearColor(Color::rgb(0., 0.4118, 0.5804)))
         .insert_resource(WindowDescriptor {
             title: "Naval".to_string(),
-            width: 598.0,
-            height: 676.0,
+            width: 1000.0,
+            height: 700.0,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -74,5 +116,6 @@ fn main() {
         .add_startup_system(setup)
         .add_plugin(PlayerPlugin)
         .add_plugin(CanonBallPlugin)
+        .add_plugin(IslandPlugin)
         .run();
 }
