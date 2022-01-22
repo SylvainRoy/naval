@@ -10,7 +10,7 @@ use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
 use island::IslandPlugin;
 use player::PlayerPlugin;
-// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
 fn setup(
     mut commands: Commands,
@@ -35,7 +35,7 @@ fn setup(
         TextureAtlas::new_empty(asset_server.load("spritesheet.png"), Vec2::new(96., 32.));
     let boat_index = texture_atlas.add_texture(bevy::sprite::Rect {
         min: Vec2::new(0., 0.),
-        max: Vec2::new(96., 16.),
+        max: Vec2::new(80., 16.),
     });
     let canon_index = texture_atlas.add_texture(bevy::sprite::Rect {
         min: Vec2::new(0., 16.),
@@ -111,8 +111,8 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_system(bevy::input::system::exit_on_esc_system)
-        // .add_plugin(LogDiagnosticsPlugin::default())
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup)
         .add_plugin(PlayerPlugin)
         .add_plugin(CanonBallPlugin)

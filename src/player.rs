@@ -13,7 +13,7 @@ const BOAT_FRICTION: f32 = 0.2;
 const BOAT_ROTATION_SPEED: f32 = std::f32::consts::PI / 6.;
 
 const CANON_INIT_ANGLE: f32 = 0.;
-const CANON_POSITIONS: (f32, f32) = (16., -32.);
+const CANON_POSITIONS: (f32, f32) = (24., -24.);
 const CANON_ROTATION_SPEED: f32 = std::f32::consts::PI;
 
 //

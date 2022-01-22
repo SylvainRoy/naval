@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
-pub const TIME_STEP: f32 = 1. / 60.;
+pub const TIME_STEP: f32 = 1. / 30.;
 
+// Layers to position the sprites
 pub const PROJECTILE_Z: f32 = 6.;
 pub const WEAPON_Z: f32 = 5.;
 pub const BOAT_Z: f32 = 4.;
