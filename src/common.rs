@@ -36,4 +36,5 @@ pub struct SpriteMaterials {
     pub mountain_index: usize,
     pub canon_sight_index: usize,
     pub torpedo_sight_index: usize,
+    pub explosion: Handle<TextureAtlas>,
 }

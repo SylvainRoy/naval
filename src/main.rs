@@ -4,6 +4,7 @@ mod canonball;
 mod common;
 mod island;
 mod player;
+mod explosion;
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
@@ -11,6 +12,7 @@ use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
 use island::IslandPlugin;
 use player::PlayerPlugin;
+use explosion::ExplosionPlugin;
 
 fn setup(
     mut commands: Commands,
@@ -89,10 +91,12 @@ fn setup(
         min: Vec2::new(32., 64.),
         max: Vec2::new(64., 96.),
     });
+    // Read explosion spritesheet
+	let texture_handle_explosion = asset_server.load("explosion.png");
+	let texture_atlas_explosion = TextureAtlas::from_grid(texture_handle_explosion, Vec2::new(64.0, 64.0), 4, 4);
 
-    let sprites_h = texture_atlases.add(texture_atlas);
     commands.insert_resource(SpriteMaterials {
-        texture: sprites_h,
+        texture: texture_atlases.add(texture_atlas),
         boat_index,
         canon_index,
         canonball_index,
@@ -107,6 +111,7 @@ fn setup(
         mountain_index,
         canon_sight_index,
         torpedo_sight_index,
+        explosion: texture_atlases.add(texture_atlas_explosion),
     });
 }
 
@@ -127,5 +132,6 @@ fn main() {
         .add_plugin(PlayerPlugin)
         .add_plugin(CanonBallPlugin)
         .add_plugin(IslandPlugin)
+        .add_plugin(ExplosionPlugin)
         .run();
 }

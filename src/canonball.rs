@@ -1,4 +1,5 @@
 use crate::common::{WinSize, TIME_STEP};
+use crate::explosion::ExplosionToSpawn;
 use bevy::prelude::*;
 
 const CANONBALL_SPEED: f32 = 150.;
@@ -38,9 +39,11 @@ fn canonball_movement(
                 commands.entity(canonball_entity).despawn();
             }
         } else {
-            // No more energy: explode canonball
+            // No more energy: replace canonball by an explosion
             commands.entity(canonball_entity).despawn();
-            // TODO: Explosion here!
+            commands
+                .spawn()
+                .insert(ExplosionToSpawn(canonball_tf.translation.clone()));
         }
     }
 }
