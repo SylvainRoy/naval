@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 use std::collections::{hash_map::Entry::Vacant, HashMap};
 
-const NUM_ISLANDS:u32 = 20;
-const SIZE_ISLANDS:u32 = 40;
+const NUM_ISLANDS: u32 = 20;
+const SIZE_ISLANDS: u32 = 40;
 
 //
 // Components
@@ -59,10 +59,10 @@ fn islands_spawn(
     // Spwan the ground tiles
     for (tile_x, tile_y) in tiles.keys() {
         // Determine sprite & orientation based on adjacent tiles
-        let right = tiles.contains_key(&(*tile_x+1, *tile_y));
-        let up = tiles.contains_key(&(*tile_x, *tile_y+1));
-        let left = tiles.contains_key(&(*tile_x-1, *tile_y));
-        let down = tiles.contains_key(&(*tile_x, *tile_y-1));
+        let right = tiles.contains_key(&(*tile_x + 1, *tile_y));
+        let up = tiles.contains_key(&(*tile_x, *tile_y + 1));
+        let left = tiles.contains_key(&(*tile_x - 1, *tile_y));
+        let down = tiles.contains_key(&(*tile_x, *tile_y - 1));
         let (index, rotation) = match (right, up, left, down) {
             // 0 adjacent
             (false, false, false, false) => (sprite_materials.ground6_index, 0.),
@@ -76,7 +76,7 @@ fn islands_spawn(
             (false, true, true, false) => (sprite_materials.ground3_index, -1.),
             (false, false, true, true) => (sprite_materials.ground3_index, 0.),
             (true, false, false, true) => (sprite_materials.ground3_index, 1.),
-            
+
             (true, false, true, false) => (sprite_materials.ground4_index, 0.),
             (false, true, false, true) => (sprite_materials.ground4_index, 1.),
             // 3
@@ -98,7 +98,10 @@ fn islands_spawn(
                         16. * (*tile_y as f32),
                         GROUND_Z,
                     ),
-                    rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), rotation * std::f32::consts::PI / 2.),
+                    rotation: Quat::from_axis_angle(
+                        Vec3::new(0., 0., 1.),
+                        rotation * std::f32::consts::PI / 2.,
+                    ),
                     // scale: Vec3::splat(1.0),
                     ..Default::default()
                 },

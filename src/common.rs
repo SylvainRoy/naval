@@ -4,7 +4,7 @@ pub const TIME_STEP: f32 = 1. / 30.;
 
 // Layers to position the sprites
 pub const PROJECTILE_Z: f32 = 6.;
-pub const WEAPON_Z: f32 = 5.;
+// pub const WEAPON_Z: f32 = 5.;
 pub const BOAT_Z: f32 = 4.;
 // pub const MOUNTAIN_Z: f32 = 3.;
 pub const GROUND_Z: f32 = 2.;
@@ -34,4 +34,6 @@ pub struct SpriteMaterials {
     pub ground5_index: usize,
     pub ground6_index: usize,
     pub mountain_index: usize,
+    pub canon_sight_index: usize,
+    pub torpedo_sight_index: usize,
 }

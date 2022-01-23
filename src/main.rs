@@ -5,12 +5,12 @@ mod common;
 mod island;
 mod player;
 
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
 use island::IslandPlugin;
 use player::PlayerPlugin;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
 fn setup(
     mut commands: Commands,
@@ -81,6 +81,14 @@ fn setup(
         min: Vec2::new(0., 48.),
         max: Vec2::new(16., 64.),
     });
+    let canon_sight_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(0., 64.),
+        max: Vec2::new(32., 96.),
+    });
+    let torpedo_sight_index = texture_atlas.add_texture(bevy::sprite::Rect {
+        min: Vec2::new(32., 64.),
+        max: Vec2::new(64., 96.),
+    });
 
     let sprites_h = texture_atlases.add(texture_atlas);
     commands.insert_resource(SpriteMaterials {
@@ -97,6 +105,8 @@ fn setup(
         ground5_index,
         ground6_index,
         mountain_index,
+        canon_sight_index,
+        torpedo_sight_index,
     });
 }
 
