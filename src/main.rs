@@ -7,7 +7,7 @@ mod player;
 mod explosion;
 
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy::{prelude::*, log::{LogPlugin, LogSettings}};
+use bevy::prelude::*;
 use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
 use island::IslandPlugin;
@@ -36,8 +36,8 @@ fn setup(
     let mut texture_atlas =
         TextureAtlas::new_empty(asset_server.load("spritesheet.png"), Vec2::new(96., 32.));
     let boat_index = texture_atlas.add_texture(bevy::sprite::Rect {
-        min: Vec2::new(0., 0.),
-        max: Vec2::new(80., 16.),
+        min: Vec2::new(16., 48.),
+        max: Vec2::new(56., 56.),
     });
     let canon_index = texture_atlas.add_texture(bevy::sprite::Rect {
         min: Vec2::new(0., 16.),

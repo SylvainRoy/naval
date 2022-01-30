@@ -8,7 +8,6 @@ use crate::common::*;
 
 const BOAT_INIT_POSITION: (f32, f32) = (0., 0.);
 const BOAT_INIT_ANGLE: f32 = 0.;
-const BOAT_SCALE: f32 = 0.5;
 
 const BOAT_MAX_SPEED_FORWARD: f32 = 1.5;
 const BOAT_MAX_SPEED_BACKWARD: f32 = -0.5;
@@ -55,7 +54,7 @@ fn player_spawn(
     sprite_materials: Res<SpriteMaterials>,
     _win_size: Res<WinSize>,
 ) {
-    // Spwan the boat, canon sight and torpedo sight
+    // Spwan the boat, canon sight and torpedo sight.
     commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprite_materials.texture.clone(),
