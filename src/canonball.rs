@@ -1,6 +1,8 @@
+use bevy::{prelude::*, sprite::collide_aabb::collide};
+
 use crate::common::{WinSize, TIME_STEP};
 use crate::explosion::ExplosionToSpawn;
-use bevy::prelude::*;
+use crate::island::Mountain;
 
 const CANONBALL_SPEED: f32 = 150.;
 
@@ -48,6 +50,31 @@ fn canonball_movement(
     }
 }
 
+fn canonball_mountain_collision(
+    mut commands: Commands,
+    mut query_canonball: Query<(Entity, &Transform), With<CanonBall>>,
+    query_moutain: Query<&Transform, With<Mountain>>,
+) {
+    // for each canonball & mountain.
+    for (canonball_entity, canonball_tf) in query_canonball.iter_mut() {
+        for mountain_tf in query_moutain.iter() {
+            // Replace canonball by an explosion in case of collision.
+            let collision = collide(
+                canonball_tf.translation,
+                Vec2::splat(6.),
+                mountain_tf.translation,
+                Vec2::splat(16.),
+            );
+            if collision.is_some() {
+                commands.entity(canonball_entity).despawn();
+                commands
+                    .spawn()
+                    .insert(ExplosionToSpawn(canonball_tf.translation.clone()));
+            }
+        }
+    }
+}
+
 //
 // Plugin
 //
@@ -56,6 +83,7 @@ pub struct CanonBallPlugin;
 
 impl Plugin for CanonBallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(canonball_movement);
+        app.add_system(canonball_movement)
+            .add_system(canonball_mountain_collision);
     }
 }

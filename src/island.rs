@@ -115,15 +115,15 @@ fn islands_spawn(
 
     // Add mountains tiles
     for (tile_x, tile_y) in tiles.keys() {
-
         // Mountains cannot be next to the sea.
-        if !(tiles.contains_key(&(*tile_x + 1, *tile_y)) && 
-             tiles.contains_key(&(*tile_x, *tile_y + 1)) &&
-             tiles.contains_key(&(*tile_x - 1, *tile_y)) &&
-             tiles.contains_key(&(*tile_x, *tile_y - 1))) {
-                 continue;
+        if !(tiles.contains_key(&(*tile_x + 1, *tile_y))
+            && tiles.contains_key(&(*tile_x, *tile_y + 1))
+            && tiles.contains_key(&(*tile_x - 1, *tile_y))
+            && tiles.contains_key(&(*tile_x, *tile_y - 1)))
+        {
+            continue;
         }
-        
+
         // Spawn the ground tile
         if rng.gen_range(0..=100) < PERCENTAGE_MOUNTAINS {
             commands

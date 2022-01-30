@@ -2,17 +2,17 @@
 
 mod canonball;
 mod common;
+mod explosion;
 mod island;
 mod player;
-mod explosion;
 
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
+use explosion::ExplosionPlugin;
 use island::IslandPlugin;
 use player::PlayerPlugin;
-use explosion::ExplosionPlugin;
 
 fn setup(
     mut commands: Commands,
@@ -92,8 +92,9 @@ fn setup(
         max: Vec2::new(64., 96.),
     });
     // Read explosion spritesheet
-	let texture_handle_explosion = asset_server.load("explosion.png");
-	let texture_atlas_explosion = TextureAtlas::from_grid(texture_handle_explosion, Vec2::new(64.0, 64.0), 4, 4);
+    let texture_handle_explosion = asset_server.load("explosion.png");
+    let texture_atlas_explosion =
+        TextureAtlas::from_grid(texture_handle_explosion, Vec2::new(64.0, 64.0), 4, 4);
 
     commands.insert_resource(SpriteMaterials {
         texture: texture_atlases.add(texture_atlas),

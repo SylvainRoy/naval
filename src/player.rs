@@ -1,10 +1,10 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
-use lyon_geom::{LineSegment, Point, point};
+use lyon_geom::{point, LineSegment, Point};
 
 use crate::canonball::{CanonBall, Energy};
-use crate::island::Ground;
 use crate::common::*;
+use crate::island::Ground;
 
 const BOAT_INIT_POSITION: (f32, f32) = (0., 0.);
 const BOAT_INIT_ANGLE: f32 = 0.;
@@ -214,7 +214,6 @@ fn player_ground_collision(
 ) {
     // For each boat
     for (mut player_tf, sprite, mut speed) in query_player.iter_mut() {
-
         // retrieve boat dimensions
         let boat_dimensions = sprite.custom_size.unwrap();
         let dx = boat_dimensions[0] / 2.;
@@ -222,12 +221,18 @@ fn player_ground_collision(
         let boat_max_dim = boat_dimensions[0].max(boat_dimensions[1]);
 
         // Compute relevants points of the boat skull
-        let front_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, dy, 0.));
-        let front_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, -dy, 0.));
-        let middle_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., dy, 0.));
-        let middle_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., -dy, 0.));
-        let rear_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, dy, 0.));
-        let rear_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, -dy, 0.));
+        let front_left_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, dy, 0.));
+        let front_right_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, -dy, 0.));
+        let middle_left_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., dy, 0.));
+        let middle_right_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., -dy, 0.));
+        let rear_left_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, dy, 0.));
+        let rear_right_pt =
+            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, -dy, 0.));
         // Compute relevants segments of the boat skull
         let front = LineSegment {
             from: point(front_left_pt[0], front_left_pt[1]),
@@ -256,7 +261,6 @@ fn player_ground_collision(
 
         // For each ground tile, check for collision
         for ground_tf in query_ground.iter() {
-
             // Quickly filter out obvious non-overlap
             let collision = collide(
                 player_tf.translation,
