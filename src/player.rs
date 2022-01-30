@@ -22,6 +22,7 @@ const CANON_ROTATION_SPEED: f32 = std::f32::consts::PI / 2.;
 const CANON_DISTANCE_SPEED: f32 = 100.;
 
 const TORPEDO_INIT_ANGLE: f32 = 0.;
+const TORPEDO_SIGHT_DIST: f32 = 48.;
 
 //
 // Components
@@ -95,7 +96,7 @@ fn player_spawn(
                     texture_atlas: sprite_materials.texture.clone(),
                     sprite: TextureAtlasSprite::new(sprite_materials.torpedo_sight_index),
                     transform: Transform {
-                        translation: Vec3::new(48., 0., WEAPON_Z),
+                        translation: Vec3::new(TORPEDO_SIGHT_DIST, 0., WEAPON_Z),
                         rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), TORPEDO_INIT_ANGLE),
                         ..Default::default()
                     },
@@ -134,7 +135,7 @@ fn player_movement(
 
 fn canon_movement(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query2: Query<(&mut Transform, &mut CanonSight)>,
+    mut query: Query<(&mut Transform, &mut CanonSight)>,
 ) {
     // Determine new parameters of the canon.
     let delta_angle = if keyboard_input.pressed(KeyCode::J) {
@@ -152,7 +153,7 @@ fn canon_movement(
         0.
     };
     // Update canon sight
-    for (mut transform, mut canon_sight) in query2.iter_mut() {
+    for (mut transform, mut canon_sight) in query.iter_mut() {
         canon_sight.0 =
             CANON_MAX_DISTANCE.min(CANON_MIN_DISTANCE.max(canon_sight.0 + delta_distance));
         transform.rotation = transform
@@ -161,6 +162,29 @@ fn canon_movement(
         transform.translation = transform
             .rotation
             .mul_vec3(Vec3::new(canon_sight.0, 0., 0.));
+    }
+}
+
+fn torpedo_sight_movement(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut query: Query<&mut Transform, With<TorpedoSight>>,
+) {
+    // Determine new parameters of the torpedo sight.
+    let delta_angle = if keyboard_input.pressed(KeyCode::U) {
+        CANON_ROTATION_SPEED * TIME_STEP
+    } else if keyboard_input.pressed(KeyCode::O) {
+        -CANON_ROTATION_SPEED * TIME_STEP
+    } else {
+        0.
+    };
+    // Update torpedo sight
+    for mut transform in query.iter_mut() {
+        transform.rotation = transform
+            .rotation
+            .mul_quat(Quat::from_axis_angle(Vec3::new(0., 0., 1.), delta_angle));
+        transform.translation = transform
+            .rotation
+            .mul_vec3(Vec3::new(TORPEDO_SIGHT_DIST, 0., 0.));
     }
 }
 
@@ -328,7 +352,7 @@ fn check_collision(seg: &LineSegment<f32>, segs: &Vec<LineSegment<f32>>) -> bool
     false
 }
 
-/// Utility fun to convert from Vec3 to Point.
+/// Utility to convert from Vec3 to Point.
 fn vec_to_point(vec: &Vec3) -> Point<f32> {
     point(vec[0], vec[1])
 }
@@ -345,6 +369,7 @@ impl Plugin for PlayerPlugin {
             .add_system(player_movement)
             .add_system(canon_movement)
             .add_system(player_fire)
-            .add_system(player_ground_collision);
+            .add_system(player_ground_collision)
+            .add_system(torpedo_sight_movement);
     }
 }
