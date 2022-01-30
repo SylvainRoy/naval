@@ -66,6 +66,8 @@ fn canonball_mountain_collision(
                 Vec2::splat(16.),
             );
             if collision.is_some() {
+                // TODO: to avoid a warning, canonball should be pushed in a vec here and despawn out of the for loop.
+                //   the issue is that they collide with two tiles at the same time and are despawned twice.
                 commands.entity(canonball_entity).despawn();
                 commands
                     .spawn()
