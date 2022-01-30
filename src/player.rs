@@ -252,22 +252,24 @@ fn torpedo_fire(
     for (parent, torpedo_sight_gtf, mut ready_fire, _) in query_sight.iter_mut() {
         if ready_fire.0 && kb.pressed(KeyCode::Return) {
             let boat_gtf = query_boat.get(parent.0).unwrap();
-            // Spawn the torpedo
-            commands
-                .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: sprite_materials.texture.clone(),
-                    sprite: TextureAtlasSprite::new(sprite_materials.torpedo_index),
-                    transform: Transform {
-                        translation: Vec3::new(
-                            boat_gtf.translation.x,
-                            boat_gtf.translation.y,
-                            TORPEDO_Z),
-                        rotation: torpedo_sight_gtf.rotation,
+            // Spawn the torpedos
+            for angle in [-0.1, 0., 0.1] {
+                commands
+                    .spawn_bundle(SpriteSheetBundle {
+                        texture_atlas: sprite_materials.texture.clone(),
+                        sprite: TextureAtlasSprite::new(sprite_materials.torpedo_index),
+                        transform: Transform {
+                            translation: Vec3::new(
+                                boat_gtf.translation.x,
+                                boat_gtf.translation.y,
+                                TORPEDO_Z),
+                            rotation: torpedo_sight_gtf.rotation.mul_quat(Quat::from_rotation_z(angle)),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .insert(Torpedo);
+                    })
+                    .insert(Torpedo);
+            }
             ready_fire.0 = false;
         }
         // No automatic fire: the key must be released before next shot.
