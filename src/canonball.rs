@@ -33,10 +33,10 @@ fn canonball_movement(
             let translation = canonball_tf.rotation.mul_vec3(Vec3::new(distance, 0., 0.));
             canonball_tf.translation += translation;
             // Remove canonball if off screen.
-            if (translation.y < -0.5 * win_size.h)
-                || (0.5 * win_size.h < translation.y)
-                || (translation.x < -0.5 * win_size.w)
-                || (0.5 * win_size.w < translation.x)
+            if (canonball_tf.translation.y < -0.5 * win_size.h)
+                || (0.5 * win_size.h < canonball_tf.translation.y)
+                || (canonball_tf.translation.x < -0.5 * win_size.w)
+                || (0.5 * win_size.w < canonball_tf.translation.x)
             {
                 commands.entity(canonball_entity).despawn();
             }
