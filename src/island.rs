@@ -5,6 +5,7 @@ use std::collections::{hash_map::Entry::Vacant, HashMap};
 
 const NUM_ISLANDS: u32 = 20;
 const SIZE_ISLANDS: u32 = 40;
+const PERCENTAGE_MOUNTAINS: u32 = 30;
 
 //
 // Components
@@ -12,6 +13,9 @@ const SIZE_ISLANDS: u32 = 40;
 
 #[derive(Component)]
 pub struct Ground;
+
+#[derive(Component)]
+pub struct Mountain;
 
 //
 // Systems
@@ -102,12 +106,42 @@ fn islands_spawn(
                         Vec3::new(0., 0., 1.),
                         rotation * std::f32::consts::PI / 2.,
                     ),
-                    // scale: Vec3::splat(1.0),
                     ..Default::default()
                 },
                 ..Default::default()
             })
             .insert(Ground);
+    }
+
+    // Add mountains tiles
+    for (tile_x, tile_y) in tiles.keys() {
+
+        // Mountains cannot be next to the sea.
+        if !(tiles.contains_key(&(*tile_x + 1, *tile_y)) && 
+             tiles.contains_key(&(*tile_x, *tile_y + 1)) &&
+             tiles.contains_key(&(*tile_x - 1, *tile_y)) &&
+             tiles.contains_key(&(*tile_x, *tile_y - 1))) {
+                 continue;
+        }
+        
+        // Spawn the ground tile
+        if rng.gen_range(0..=100) < PERCENTAGE_MOUNTAINS {
+            commands
+                .spawn_bundle(SpriteSheetBundle {
+                    texture_atlas: sprite_materials.texture.clone(),
+                    sprite: TextureAtlasSprite::new(sprite_materials.mountain_index),
+                    transform: Transform {
+                        translation: Vec3::new(
+                            16. * (*tile_x as f32),
+                            16. * (*tile_y as f32),
+                            MOUNTAIN_Z,
+                        ),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Mountain);
+        }
     }
 }
 

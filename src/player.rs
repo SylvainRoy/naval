@@ -79,7 +79,7 @@ fn player_spawn(
                     texture_atlas: sprite_materials.texture.clone(),
                     sprite: TextureAtlasSprite::new(sprite_materials.canon_sight_index),
                     transform: Transform {
-                        translation: Vec3::new(CANON_MIN_DISTANCE, 0., PROJECTILE_Z),
+                        translation: Vec3::new(CANON_MIN_DISTANCE, 0., WEAPON_Z),
                         rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), CANON_INIT_ANGLE),
                         ..Default::default()
                     },
@@ -95,7 +95,7 @@ fn player_spawn(
                     texture_atlas: sprite_materials.texture.clone(),
                     sprite: TextureAtlasSprite::new(sprite_materials.torpedo_sight_index),
                     transform: Transform {
-                        translation: Vec3::new(48., 0., PROJECTILE_Z),
+                        translation: Vec3::new(48., 0., WEAPON_Z),
                         rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), TORPEDO_INIT_ANGLE),
                         ..Default::default()
                     },
@@ -254,7 +254,7 @@ fn player_ground_collision(
             to: point(rear_right_pt[0], rear_right_pt[1]),
         };
 
-        // For each island tile, check for collision
+        // For each ground tile, check for collision
         for ground_tf in query_ground.iter() {
 
             // Quickly filter out obvious non-overlap
