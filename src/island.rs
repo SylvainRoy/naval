@@ -11,7 +11,7 @@ const SIZE_ISLANDS: u32 = 40;
 //
 
 #[derive(Component)]
-struct Ground;
+pub struct Ground;
 
 //
 // Systems

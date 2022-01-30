@@ -1,6 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::collide_aabb::collide};
+
+use lyon_geom::{LineSegment, Point, point};
 
 use crate::canonball::{CanonBall, Energy};
+use crate::island::Ground;
 use crate::common::*;
 
 const BOAT_INIT_POSITION: (f32, f32) = (0., 0.);
@@ -52,15 +55,19 @@ fn player_spawn(
     sprite_materials: Res<SpriteMaterials>,
     _win_size: Res<WinSize>,
 ) {
-    // Spwan the boat with both canons
+    // Spwan the boat, canon sight and torpedo sight
     commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: sprite_materials.texture.clone(),
-            sprite: TextureAtlasSprite::new(sprite_materials.boat_index),
+            sprite: TextureAtlasSprite {
+                index: sprite_materials.boat_index,
+                custom_size: Some(Vec2::new(40., 8.)),
+                ..Default::default()
+            },
             transform: Transform {
                 translation: Vec3::new(BOAT_INIT_POSITION.0, BOAT_INIT_POSITION.1, BOAT_Z),
                 rotation: Quat::from_axis_angle(Vec3::new(0., 0., 1.), BOAT_INIT_ANGLE),
-                scale: Vec3::splat(BOAT_SCALE),
+                ..Default::default()
             },
             ..Default::default()
         })
@@ -173,11 +180,13 @@ fn player_fire(
     for (parent, canon_sight_gtf, mut ready_fire, _) in query_sight.iter_mut() {
         if ready_fire.0 && kb.pressed(KeyCode::Space) {
             let boat_gtf = query_boat.get(parent.0).unwrap();
+            // Compute origin and energy of canonball.
             let x_dest = canon_sight_gtf.translation.x;
             let y_dest = canon_sight_gtf.translation.y;
             let x_org = boat_gtf.translation.x;
             let y_org = boat_gtf.translation.y;
             let distance = Vec3::new(x_dest - x_org, y_dest - y_org, 0.).length();
+            // Spawn the canonball
             commands
                 .spawn_bundle(SpriteSheetBundle {
                     texture_atlas: sprite_materials.texture.clone(),
@@ -193,10 +202,132 @@ fn player_fire(
                 .insert(Energy(distance));
             ready_fire.0 = false;
         }
+        // No automatic fire: the key must be released before next shot.
         if kb.just_released(KeyCode::Space) {
             ready_fire.0 = true;
         }
     }
+}
+
+fn player_ground_collision(
+    mut query_player: Query<(&mut Transform, &TextureAtlasSprite, &mut Speed), With<Player>>,
+    query_ground: Query<&Transform, (With<Ground>, Without<Player>)>,
+) {
+    // For each boat
+    for (mut player_tf, sprite, mut speed) in query_player.iter_mut() {
+
+        // retrieve boat dimensions
+        let boat_dimensions = sprite.custom_size.unwrap();
+        let dx = boat_dimensions[0] / 2.;
+        let dy = boat_dimensions[1] / 2.;
+        let boat_max_dim = boat_dimensions[0].max(boat_dimensions[1]);
+
+        // Compute relevants points of the boat skull
+        let front_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, dy, 0.));
+        let front_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, -dy, 0.));
+        let middle_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., dy, 0.));
+        let middle_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., -dy, 0.));
+        let rear_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, dy, 0.));
+        let rear_right_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, -dy, 0.));
+        // Compute relevants segments of the boat skull
+        let front = LineSegment {
+            from: point(front_left_pt[0], front_left_pt[1]),
+            to: point(front_right_pt[0], front_right_pt[1]),
+        };
+        let rear = LineSegment {
+            from: point(front_left_pt[0], front_left_pt[1]),
+            to: point(front_right_pt[0], front_right_pt[1]),
+        };
+        let front_left = LineSegment {
+            from: point(middle_left_pt[0], middle_left_pt[1]),
+            to: point(front_left_pt[0], front_left_pt[1]),
+        };
+        let front_right = LineSegment {
+            from: point(middle_right_pt[0], middle_right_pt[1]),
+            to: point(front_right_pt[0], front_right_pt[1]),
+        };
+        let rear_left = LineSegment {
+            from: point(middle_left_pt[0], middle_left_pt[1]),
+            to: point(rear_left_pt[0], rear_left_pt[1]),
+        };
+        let rear_right = LineSegment {
+            from: point(middle_right_pt[0], middle_right_pt[1]),
+            to: point(rear_right_pt[0], rear_right_pt[1]),
+        };
+
+        // For each island tile, check for collision
+        for ground_tf in query_ground.iter() {
+
+            // Quickly filter out obvious non-overlap
+            let collision = collide(
+                player_tf.translation,
+                Vec2::splat(boat_max_dim),
+                ground_tf.translation,
+                Vec2::new(16., 16.),
+            );
+            if collision.is_none() {
+                continue;
+            };
+
+            // Compute segments of the ground tile
+            let mut tile_segments = Vec::new();
+            tile_segments.push(LineSegment {
+                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
+                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
+            });
+            tile_segments.push(LineSegment {
+                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
+                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
+            });
+            tile_segments.push(LineSegment {
+                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
+                to: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
+            });
+            tile_segments.push(LineSegment {
+                from: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
+                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
+            });
+
+            // Conpute collisions of the boat & tile
+            let front_collision = check_collision(&front, &tile_segments);
+            let rear_collision = check_collision(&rear, &tile_segments);
+            let front_left_collision = check_collision(&front_left, &tile_segments);
+            let front_right_collision = check_collision(&front_right, &tile_segments);
+            let rear_left_collision = check_collision(&rear_left, &tile_segments);
+            let rear_right_collision = check_collision(&rear_right, &tile_segments);
+
+            // Change boat's speed & rotation accordingly
+            if front_collision || front_left_collision || front_right_collision {
+                speed.0 = speed.0.min(0.);
+            }
+            if rear_collision || rear_left_collision || rear_right_collision {
+                speed.0 = speed.0.max(0.);
+            }
+            let mut delta_rotate = 0.;
+            if front_left_collision || rear_right_collision {
+                delta_rotate -= BOAT_ROTATION_SPEED * TIME_STEP;
+            }
+            if front_right_collision || rear_left_collision {
+                delta_rotate += BOAT_ROTATION_SPEED * TIME_STEP;
+            }
+            player_tf.rotate(Quat::from_rotation_z(delta_rotate));
+        }
+    }
+}
+
+/// Check collision of a segment with a group of segments
+fn check_collision(seg: &LineSegment<f32>, segs: &Vec<LineSegment<f32>>) -> bool {
+    for tile_seg in segs {
+        if seg.intersects(tile_seg) {
+            return true;
+        }
+    }
+    false
+}
+
+/// Utility fun to convert from Vec3 to Point.
+fn vec_to_point(vec: &Vec3) -> Point<f32> {
+    point(vec[0], vec[1])
 }
 
 //
@@ -210,6 +341,7 @@ impl Plugin for PlayerPlugin {
         app.add_startup_stage("game_setup_actors", SystemStage::single(player_spawn))
             .add_system(player_movement)
             .add_system(canon_movement)
-            .add_system(player_fire);
+            .add_system(player_fire)
+            .add_system(player_ground_collision);
     }
 }

@@ -6,8 +6,8 @@ mod island;
 mod player;
 mod explosion;
 
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy::prelude::*;
+// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::{prelude::*, log::{LogPlugin, LogSettings}};
 use canonball::CanonBallPlugin;
 use common::{SpriteMaterials, WinSize};
 use island::IslandPlugin;
@@ -126,8 +126,8 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_system(bevy::input::system::exit_on_esc_system)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup)
         .add_plugin(PlayerPlugin)
         .add_plugin(CanonBallPlugin)
