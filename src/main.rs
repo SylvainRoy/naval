@@ -1,14 +1,16 @@
 //#![allow(unused)]
 
 mod canonball;
+mod torpedo;
 mod common;
 mod explosion;
 mod island;
 mod player;
 
-// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+// use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use canonball::CanonBallPlugin;
+use torpedo::TorpedoPlugin;
 use common::{SpriteMaterials, WinSize};
 use explosion::ExplosionPlugin;
 use island::IslandPlugin;
@@ -132,6 +134,7 @@ fn main() {
         .add_startup_system(setup)
         .add_plugin(PlayerPlugin)
         .add_plugin(CanonBallPlugin)
+        .add_plugin(TorpedoPlugin)
         .add_plugin(IslandPlugin)
         .add_plugin(ExplosionPlugin)
         .run();

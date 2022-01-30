@@ -8,7 +8,7 @@ pub const PROJECTILE_Z: f32 = 5.;
 pub const BOAT_Z: f32 = 4.;
 pub const MOUNTAIN_Z: f32 = 3.;
 pub const GROUND_Z: f32 = 2.;
-// pub const TORPEDO_Z: f32 = 1.;
+pub const TORPEDO_Z: f32 = 1.;
 // pub const WATER_Z: f32 = 0.;
 
 //

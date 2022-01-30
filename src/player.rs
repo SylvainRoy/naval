@@ -3,6 +3,7 @@ use bevy::{prelude::*, sprite::collide_aabb::collide};
 use lyon_geom::{point, LineSegment, Point};
 
 use crate::canonball::{CanonBall, Energy};
+use crate::torpedo::Torpedo;
 use crate::common::*;
 use crate::island::Ground;
 
@@ -45,6 +46,9 @@ struct CanonSight(f32);
 
 #[derive(Component)]
 struct TorpedoSight;
+
+#[derive(Component)]
+struct TorpedoReadyFire(bool);
 
 //
 // Systems
@@ -102,7 +106,8 @@ fn player_spawn(
                     },
                     ..Default::default()
                 })
-                .insert(TorpedoSight);
+                .insert(TorpedoSight)
+                .insert(TorpedoReadyFire(true));
         });
 }
 
@@ -188,7 +193,7 @@ fn torpedo_sight_movement(
     }
 }
 
-fn player_fire(
+fn canon_fire(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
     sprite_materials: Res<SpriteMaterials>,
@@ -227,6 +232,46 @@ fn player_fire(
         }
         // No automatic fire: the key must be released before next shot.
         if kb.just_released(KeyCode::Space) {
+            ready_fire.0 = true;
+        }
+    }
+}
+
+fn torpedo_fire(
+    mut commands: Commands,
+    kb: Res<Input<KeyCode>>,
+    sprite_materials: Res<SpriteMaterials>,
+    query_boat: Query<&GlobalTransform>, // TODO: should be refined. Same for above fun.
+    mut query_sight: Query<(
+        &Parent,
+        &GlobalTransform,
+        &mut TorpedoReadyFire,
+        With<TorpedoSight>,
+    )>,
+) {
+    for (parent, torpedo_sight_gtf, mut ready_fire, _) in query_sight.iter_mut() {
+        if ready_fire.0 && kb.pressed(KeyCode::Return) {
+            let boat_gtf = query_boat.get(parent.0).unwrap();
+            // Spawn the torpedo
+            commands
+                .spawn_bundle(SpriteSheetBundle {
+                    texture_atlas: sprite_materials.texture.clone(),
+                    sprite: TextureAtlasSprite::new(sprite_materials.torpedo_index),
+                    transform: Transform {
+                        translation: Vec3::new(
+                            boat_gtf.translation.x,
+                            boat_gtf.translation.y,
+                            TORPEDO_Z),
+                        rotation: torpedo_sight_gtf.rotation,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Torpedo);
+            ready_fire.0 = false;
+        }
+        // No automatic fire: the key must be released before next shot.
+        if kb.just_released(KeyCode::Return) {
             ready_fire.0 = true;
         }
     }
@@ -368,7 +413,8 @@ impl Plugin for PlayerPlugin {
         app.add_startup_stage("game_setup_actors", SystemStage::single(player_spawn))
             .add_system(player_movement)
             .add_system(canon_movement)
-            .add_system(player_fire)
+            .add_system(canon_fire)
+            .add_system(torpedo_fire)
             .add_system(player_ground_collision)
             .add_system(torpedo_sight_movement);
     }
