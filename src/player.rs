@@ -208,7 +208,7 @@ fn canon_fire(
     audio: Res<Audio>,
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
-    query_boat: Query<&GlobalTransform>,
+    query_boat: Query<&GlobalTransform, With<Player>>,
     mut query_sight: Query<(
         &Parent,
         &GlobalTransform,
@@ -260,7 +260,7 @@ fn torpedo_fire(
     audio: Res<Audio>,
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
-    query_boat: Query<&GlobalTransform>, // TODO: should be refined. Same for above fun.
+    query_boat: Query<&GlobalTransform, With<Player>>,
     mut query_sight: Query<(
         &Parent,
         &GlobalTransform,

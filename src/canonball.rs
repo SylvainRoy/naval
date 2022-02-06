@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
 use crate::common::{WinSize, TIME_STEP};
@@ -55,20 +57,23 @@ fn canonball_mountain_collision(
     mut query_canonball: Query<(Entity, &Transform), With<CanonBall>>,
     query_moutain: Query<&Transform, With<Mountain>>,
 ) {
+    let mut despawned = HashMap::new();
     // for each canonball & mountain.
     for (canonball_entity, canonball_tf) in query_canonball.iter_mut() {
         for mountain_tf in query_moutain.iter() {
-            // Replace canonball by an explosion in case of collision.
+            // Check for collision.
             let collision = collide(
                 canonball_tf.translation,
                 Vec2::splat(6.),
                 mountain_tf.translation,
                 Vec2::splat(16.),
             );
+            // If collision, replace canonball by an explosion.
             if collision.is_some() {
-                // TODO: to avoid a warning, canonball should be pushed in a map here and despawn out of the for loop.
-                //   the issue is that they collide with two tiles at the same time and are despawned twice.
-                commands.entity(canonball_entity).despawn();
+                if !despawned.contains_key(&canonball_entity) {
+                    despawned.insert(canonball_entity, true);
+                    commands.entity(canonball_entity).despawn();
+                }
                 commands
                     .spawn()
                     .insert(ExplosionToSpawn(canonball_tf.translation.clone()));

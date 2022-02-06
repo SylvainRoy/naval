@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
 use crate::common::{WinSize, TIME_STEP};
@@ -45,20 +47,23 @@ fn torpedo_ground_collision(
     mut query_torpedo: Query<(Entity, &Transform), With<Torpedo>>,
     query_moutain: Query<&Transform, With<Ground>>,
 ) {
+    let mut despawned = HashMap::new();
     // for each torpedo & ground.
     for (torpedo_entity, torpedo_tf) in query_torpedo.iter_mut() {
         for ground_tf in query_moutain.iter() {
-            // Replace torpedo by an explosion in case of collision.
+            // Check for collision.
             let collision = collide(
                 torpedo_tf.translation,
                 Vec2::splat(6.),
                 ground_tf.translation,
                 Vec2::splat(16.),
             );
+            // If collision, replace torpedo by an explosion.
             if collision.is_some() {
-                // TODO: to avoid a warning, torpedo should be pushed in a vec here and despawn out of the for loop.
-                //   the issue is that they collide with two tiles at the same time and are despawned twice.
-                commands.entity(torpedo_entity).despawn();
+                if !despawned.contains_key(&torpedo_entity) {
+                    despawned.insert(torpedo_entity, true);
+                    commands.entity(torpedo_entity).despawn();
+                }
                 commands
                     .spawn()
                     .insert(ExplosionToSpawn(torpedo_tf.translation.clone()));
