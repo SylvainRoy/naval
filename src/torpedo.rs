@@ -24,7 +24,10 @@ fn torpedo_movement(
 ) {
     for (torpedo_entity, mut torpedo_tf) in query.iter_mut() {
         // Compute new torpedo position.
-        let translation = torpedo_tf.rotation.mul_vec3(Vec3::new(TORPEDO_SPEED * TIME_STEP, 0., 0.));
+        let translation =
+            torpedo_tf
+                .rotation
+                .mul_vec3(Vec3::new(TORPEDO_SPEED * TIME_STEP, 0., 0.));
         torpedo_tf.translation += translation;
         // Remove torpedo if off screen.
         if (torpedo_tf.translation.y < -0.5 * win_size.h)

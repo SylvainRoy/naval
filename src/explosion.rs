@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use bevy_kira_audio::Audio;
 
 use crate::common::*;
+
 //
 // Components
 //
@@ -17,13 +19,16 @@ pub struct ExplosionToSpawn(pub Vec3);
 
 fn explosion_to_spawn(
     mut commands: Commands,
+    audio: Res<Audio>,
+    audio_materials: Res<AudioMaterials>,
+    sprite_materials: Res<SpriteMaterials>,
     query: Query<(Entity, &ExplosionToSpawn)>,
-    materials: Res<SpriteMaterials>,
 ) {
     for (explosion_spawn_entity, explosion_to_spawn) in query.iter() {
+        // Spwan an explosion
         commands
             .spawn_bundle(SpriteSheetBundle {
-                texture_atlas: materials.explosion.clone(),
+                texture_atlas: sprite_materials.explosion.clone(),
                 transform: Transform {
                     translation: explosion_to_spawn.0,
                     ..Default::default()
@@ -32,7 +37,12 @@ fn explosion_to_spawn(
             })
             .insert(Explosion)
             .insert(Timer::from_seconds(0.05, true));
-
+        // Play explosion sound.
+        audio.play_in_channel(
+            audio_materials.explosion_sound.clone(),
+            &audio_materials.explosion_channel,
+        );
+        // Despawn explosion trigger.
         commands.entity(explosion_spawn_entity).despawn();
     }
 }

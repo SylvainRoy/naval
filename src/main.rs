@@ -1,24 +1,27 @@
 //#![allow(unused)]
 
 mod canonball;
-mod torpedo;
 mod common;
 mod explosion;
 mod island;
 mod player;
+mod torpedo;
 
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin};
 // use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+
 use canonball::CanonBallPlugin;
-use torpedo::TorpedoPlugin;
-use common::{SpriteMaterials, WinSize};
+use common::{AudioMaterials, SpriteMaterials, WinSize};
 use explosion::ExplosionPlugin;
 use island::IslandPlugin;
 use player::PlayerPlugin;
+use torpedo::TorpedoPlugin;
 
 fn setup(
     mut commands: Commands,
     mut windows: ResMut<Windows>,
+    audio: Res<Audio>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
@@ -116,6 +119,25 @@ fn setup(
         torpedo_sight_index,
         explosion: texture_atlases.add(texture_atlas_explosion),
     });
+
+    // Ream audio files and create associated resources.
+    let audio_materials = AudioMaterials {
+        canon_sound: asset_server.load("GunShotGverb.ogg"),
+        explosion_sound: asset_server.load("ExplosionMetalGverb.ogg"),
+        torpedo_sound: asset_server.load("SplashGverb.ogg"),
+        engine_sound: asset_server.load("BattleShipMovementAmbient.ogg"),
+        weapon_channel: AudioChannel::new("weapon".to_string()),
+        explosion_channel: AudioChannel::new("explosion".to_string()),
+        engine_channel: AudioChannel::new("engine".to_string()),
+    };
+    // Prepare engine audio channel.
+    commands.insert_resource(audio_materials.clone());
+    audio.set_volume_in_channel(0.5, &audio_materials.engine_channel);
+    audio.play_looped_in_channel(
+        audio_materials.engine_sound.clone(),
+        &audio_materials.engine_channel,
+    );
+    audio.pause_channel(&audio_materials.engine_channel);
 }
 
 fn main() {
@@ -128,6 +150,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(AudioPlugin)
         .add_system(bevy::input::system::exit_on_esc_system)
         // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())

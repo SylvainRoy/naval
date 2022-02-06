@@ -7,6 +7,8 @@ The game is built on top of Bevy and *will* be great (lots of work before that..
 
 ## Roadmap
 
+Canons on islands
+
 Dummy enemies
 
 - design sprites
@@ -15,8 +17,6 @@ Dummy enemies
 Animations
 
 - Boat movements generate waves.
-
-Canons on islands
 
 Bases with flags
 

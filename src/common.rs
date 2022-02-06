@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_kira_audio::{AudioChannel, AudioSource};
 
 pub const TIME_STEP: f32 = 1. / 30.;
 
@@ -37,4 +38,17 @@ pub struct SpriteMaterials {
     pub canon_sight_index: usize,
     pub torpedo_sight_index: usize,
     pub explosion: Handle<TextureAtlas>,
+}
+
+#[derive(Clone)]
+pub struct AudioMaterials {
+    // Sounds
+    pub canon_sound: Handle<AudioSource>,
+    pub torpedo_sound: Handle<AudioSource>,
+    pub explosion_sound: Handle<AudioSource>,
+    pub engine_sound: Handle<AudioSource>,
+    // Channels
+    pub weapon_channel: AudioChannel,
+    pub explosion_channel: AudioChannel,
+    pub engine_channel: AudioChannel,
 }

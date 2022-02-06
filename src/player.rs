@@ -1,11 +1,12 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy_kira_audio::Audio;
 
 use lyon_geom::{point, LineSegment, Point};
 
 use crate::canonball::{CanonBall, Energy};
-use crate::torpedo::Torpedo;
 use crate::common::*;
 use crate::island::Ground;
+use crate::torpedo::Torpedo;
 
 const BOAT_INIT_POSITION: (f32, f32) = (0., 0.);
 const BOAT_INIT_ANGLE: f32 = 0.;
@@ -113,6 +114,8 @@ fn player_spawn(
 
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
+    audio: Res<Audio>,
+    audio_materials: Res<AudioMaterials>,
     mut query: Query<(&mut Speed, &mut Transform, With<Player>)>,
 ) {
     if let Ok((mut speed, mut transform, _)) = query.get_single_mut() {
@@ -135,6 +138,12 @@ fn player_movement(
         };
         let translation = transform.rotation.mul_vec3(Vec3::new(speed.0, 0., 0.));
         transform.translation += translation;
+        // Start/stop engine sound
+        if speed.0 < 0.1 {
+            audio.pause_channel(&audio_materials.engine_channel);
+        } else {
+            audio.resume_channel(&audio_materials.engine_channel);
+        }
     };
 }
 
@@ -196,7 +205,9 @@ fn torpedo_sight_movement(
 fn canon_fire(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
+    audio: Res<Audio>,
     sprite_materials: Res<SpriteMaterials>,
+    audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform>,
     mut query_sight: Query<(
         &Parent,
@@ -214,7 +225,7 @@ fn canon_fire(
             let x_org = boat_gtf.translation.x;
             let y_org = boat_gtf.translation.y;
             let distance = Vec3::new(x_dest - x_org, y_dest - y_org, 0.).length();
-            // Spawn the canonball
+            // Spawn the canonball.
             commands
                 .spawn_bundle(SpriteSheetBundle {
                     texture_atlas: sprite_materials.texture.clone(),
@@ -228,6 +239,12 @@ fn canon_fire(
                 })
                 .insert(CanonBall)
                 .insert(Energy(distance));
+            // Play canon sound.
+            audio.play_in_channel(
+                audio_materials.canon_sound.clone(),
+                &audio_materials.weapon_channel,
+            );
+            // Player will have to release key to fire again.
             ready_fire.0 = false;
         }
         // No automatic fire: the key must be released before next shot.
@@ -240,7 +257,9 @@ fn canon_fire(
 fn torpedo_fire(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
+    audio: Res<Audio>,
     sprite_materials: Res<SpriteMaterials>,
+    audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform>, // TODO: should be refined. Same for above fun.
     mut query_sight: Query<(
         &Parent,
@@ -262,14 +281,23 @@ fn torpedo_fire(
                             translation: Vec3::new(
                                 boat_gtf.translation.x,
                                 boat_gtf.translation.y,
-                                TORPEDO_Z),
-                            rotation: torpedo_sight_gtf.rotation.mul_quat(Quat::from_rotation_z(angle)),
+                                TORPEDO_Z,
+                            ),
+                            rotation: torpedo_sight_gtf
+                                .rotation
+                                .mul_quat(Quat::from_rotation_z(angle)),
                             ..Default::default()
                         },
                         ..Default::default()
                     })
                     .insert(Torpedo);
             }
+            // Play torpedo sound.
+            audio.play_in_channel(
+                audio_materials.torpedo_sound.clone(),
+                &audio_materials.weapon_channel,
+            );
+            // Player will have to release key to fire again
             ready_fire.0 = false;
         }
         // No automatic fire: the key must be released before next shot.
