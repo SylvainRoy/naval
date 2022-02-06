@@ -2,6 +2,7 @@
 
 mod canonball;
 mod common;
+mod dashboard;
 mod explosion;
 mod island;
 mod player;
@@ -13,6 +14,7 @@ use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin};
 
 use canonball::CanonBallPlugin;
 use common::{AudioMaterials, SpriteMaterials, WinSize};
+use dashboard::DashboardPlugin;
 use explosion::ExplosionPlugin;
 use island::IslandPlugin;
 use player::PlayerPlugin;
@@ -25,8 +27,9 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    // Position camera
+    // Position cameras
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
 
     // Manage window
     let window = windows.get_primary_mut().unwrap();
@@ -160,5 +163,6 @@ fn main() {
         .add_plugin(TorpedoPlugin)
         .add_plugin(IslandPlugin)
         .add_plugin(ExplosionPlugin)
+        .add_plugin(DashboardPlugin)
         .run();
 }

@@ -26,12 +26,35 @@ const CANON_DISTANCE_SPEED: f32 = 100.;
 const TORPEDO_INIT_ANGLE: f32 = 0.;
 const TORPEDO_SIGHT_DIST: f32 = 48.;
 
+pub const AMUNITIONS: u32 = 100;
+pub const TORPEDOS: u32 = 30;
+pub const LIFE: u32 = 100;
+
+//
+// Misc functions
+//
+
+/// Check collision of a segment with a group of segments
+fn check_collision(seg: &LineSegment<f32>, segs: &Vec<LineSegment<f32>>) -> bool {
+    for tile_seg in segs {
+        if seg.intersects(tile_seg) {
+            return true;
+        }
+    }
+    false
+}
+
+/// Utility to convert from Vec3 to Point.
+fn vec_to_point(vec: &Vec3) -> Point<f32> {
+    point(vec[0], vec[1])
+}
+
 //
 // Components
 //
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 #[derive(Component, Default)]
 pub struct Speed(pub f32);
@@ -50,6 +73,18 @@ struct TorpedoSight;
 
 #[derive(Component)]
 struct TorpedoReadyFire(bool);
+
+#[derive(Component)]
+struct CollisionReady(bool);
+
+#[derive(Component)]
+pub struct Life(pub u32);
+
+#[derive(Component)]
+pub struct Amunitions(pub u32);
+
+#[derive(Component)]
+pub struct Torpedos(pub u32);
 
 //
 // Systems
@@ -78,6 +113,8 @@ fn player_spawn(
         })
         .insert(Player)
         .insert(Speed::default())
+        .insert(Life(LIFE))
+        .insert(CollisionReady(true))
         // Canon sight
         .with_children(|parent| {
             parent
@@ -92,7 +129,8 @@ fn player_spawn(
                     ..Default::default()
                 })
                 .insert(CanonSight(CANON_MIN_DISTANCE))
-                .insert(CanonReadyFire(true));
+                .insert(CanonReadyFire(true))
+                .insert(Amunitions(AMUNITIONS));
         })
         // Torpedo sight
         .with_children(|parent| {
@@ -108,7 +146,8 @@ fn player_spawn(
                     ..Default::default()
                 })
                 .insert(TorpedoSight)
-                .insert(TorpedoReadyFire(true));
+                .insert(TorpedoReadyFire(true))
+                .insert(Torpedos(TORPEDOS));
         });
 }
 
@@ -139,7 +178,7 @@ fn player_movement(
         let translation = transform.rotation.mul_vec3(Vec3::new(speed.0, 0., 0.));
         transform.translation += translation;
         // Start/stop engine sound
-        if speed.0 < 0.1 {
+        if speed.0.abs() < 0.1 {
             audio.pause_channel(&audio_materials.engine_channel);
         } else {
             audio.resume_channel(&audio_materials.engine_channel);
@@ -209,48 +248,52 @@ fn canon_fire(
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform, With<Player>>,
-    mut query_sight: Query<(
-        &Parent,
-        &GlobalTransform,
-        &mut CanonReadyFire,
+    mut query_sight: Query<
+        (
+            &Parent,
+            &GlobalTransform,
+            &mut CanonReadyFire,
+            &mut Amunitions,
+        ),
         With<CanonSight>,
-    )>,
+    >,
 ) {
-    for (parent, canon_sight_gtf, mut ready_fire, _) in query_sight.iter_mut() {
-        if ready_fire.0 && kb.pressed(KeyCode::Space) {
-            let boat_gtf = query_boat.get(parent.0).unwrap();
-            // Compute origin and energy of canonball.
-            let x_dest = canon_sight_gtf.translation.x;
-            let y_dest = canon_sight_gtf.translation.y;
-            let x_org = boat_gtf.translation.x;
-            let y_org = boat_gtf.translation.y;
-            let distance = Vec3::new(x_dest - x_org, y_dest - y_org, 0.).length();
-            // Spawn the canonball.
-            commands
-                .spawn_bundle(SpriteSheetBundle {
-                    texture_atlas: sprite_materials.texture.clone(),
-                    sprite: TextureAtlasSprite::new(sprite_materials.canonball_index),
-                    transform: Transform {
-                        translation: Vec3::new(x_org, y_org, PROJECTILE_Z),
-                        rotation: canon_sight_gtf.rotation,
-                        ..Default::default()
-                    },
+    let (parent, canon_sight_gtf, mut ready_fire, mut amunitions) = query_sight.single_mut();
+    if ready_fire.0 && kb.pressed(KeyCode::Space) {
+        let boat_gtf = query_boat.get(parent.0).unwrap();
+        // Compute origin and energy of canonball.
+        let x_dest = canon_sight_gtf.translation.x;
+        let y_dest = canon_sight_gtf.translation.y;
+        let x_org = boat_gtf.translation.x;
+        let y_org = boat_gtf.translation.y;
+        let distance = Vec3::new(x_dest - x_org, y_dest - y_org, 0.).length();
+        // Spawn the canonball.
+        commands
+            .spawn_bundle(SpriteSheetBundle {
+                texture_atlas: sprite_materials.texture.clone(),
+                sprite: TextureAtlasSprite::new(sprite_materials.canonball_index),
+                transform: Transform {
+                    translation: Vec3::new(x_org, y_org, PROJECTILE_Z),
+                    rotation: canon_sight_gtf.rotation,
                     ..Default::default()
-                })
-                .insert(CanonBall)
-                .insert(Energy(distance));
-            // Play canon sound.
-            audio.play_in_channel(
-                audio_materials.canon_sound.clone(),
-                &audio_materials.weapon_channel,
-            );
-            // Player will have to release key to fire again.
-            ready_fire.0 = false;
-        }
-        // No automatic fire: the key must be released before next shot.
-        if kb.just_released(KeyCode::Space) {
-            ready_fire.0 = true;
-        }
+                },
+                ..Default::default()
+            })
+            .insert(CanonBall)
+            .insert(Energy(distance));
+        // Play canon sound.
+        audio.play_in_channel(
+            audio_materials.canon_sound.clone(),
+            &audio_materials.weapon_channel,
+        );
+        // Decrease number of amunitions.
+        amunitions.0 -= 1;
+        // Player will have to release key to fire again.
+        ready_fire.0 = false;
+    }
+    // No automatic fire: the key must be released before next shot.
+    if kb.just_released(KeyCode::Space) {
+        ready_fire.0 = true;
     }
 }
 
@@ -261,175 +304,188 @@ fn torpedo_fire(
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform, With<Player>>,
-    mut query_sight: Query<(
-        &Parent,
-        &GlobalTransform,
-        &mut TorpedoReadyFire,
+    mut query_sight: Query<
+        (
+            &Parent,
+            &GlobalTransform,
+            &mut TorpedoReadyFire,
+            &mut Torpedos,
+        ),
         With<TorpedoSight>,
-    )>,
+    >,
 ) {
-    for (parent, torpedo_sight_gtf, mut ready_fire, _) in query_sight.iter_mut() {
-        if ready_fire.0 && kb.pressed(KeyCode::Return) {
-            let boat_gtf = query_boat.get(parent.0).unwrap();
-            // Spawn the torpedos
-            for angle in [-0.1, 0., 0.1] {
-                commands
-                    .spawn_bundle(SpriteSheetBundle {
-                        texture_atlas: sprite_materials.texture.clone(),
-                        sprite: TextureAtlasSprite::new(sprite_materials.torpedo_index),
-                        transform: Transform {
-                            translation: Vec3::new(
-                                boat_gtf.translation.x,
-                                boat_gtf.translation.y,
-                                TORPEDO_Z,
-                            ),
-                            rotation: torpedo_sight_gtf
-                                .rotation
-                                .mul_quat(Quat::from_rotation_z(angle)),
-                            ..Default::default()
-                        },
+    let (parent, torpedo_sight_gtf, mut ready_fire, mut torpedos) = query_sight.single_mut();
+    if ready_fire.0 && kb.pressed(KeyCode::Return) {
+        let boat_gtf = query_boat.get(parent.0).unwrap();
+        // Spawn the torpedos
+        for angle in [-0.1, 0., 0.1] {
+            commands
+                .spawn_bundle(SpriteSheetBundle {
+                    texture_atlas: sprite_materials.texture.clone(),
+                    sprite: TextureAtlasSprite::new(sprite_materials.torpedo_index),
+                    transform: Transform {
+                        translation: Vec3::new(
+                            boat_gtf.translation.x,
+                            boat_gtf.translation.y,
+                            TORPEDO_Z,
+                        ),
+                        rotation: torpedo_sight_gtf
+                            .rotation
+                            .mul_quat(Quat::from_rotation_z(angle)),
                         ..Default::default()
-                    })
-                    .insert(Torpedo);
-            }
-            // Play torpedo sound.
-            audio.play_in_channel(
-                audio_materials.torpedo_sound.clone(),
-                &audio_materials.weapon_channel,
-            );
-            // Player will have to release key to fire again
-            ready_fire.0 = false;
+                    },
+                    ..Default::default()
+                })
+                .insert(Torpedo);
         }
-        // No automatic fire: the key must be released before next shot.
-        if kb.just_released(KeyCode::Return) {
-            ready_fire.0 = true;
-        }
+        // Play torpedo sound.
+        audio.play_in_channel(
+            audio_materials.torpedo_sound.clone(),
+            &audio_materials.weapon_channel,
+        );
+        // Decrease number of torpedos
+        torpedos.0 -= 1;
+        // Player will have to release key to fire again
+        ready_fire.0 = false;
+    }
+    // No automatic fire: the key must be released before next shot.
+    if kb.just_released(KeyCode::Return) {
+        ready_fire.0 = true;
     }
 }
 
 fn player_ground_collision(
-    mut query_player: Query<(&mut Transform, &TextureAtlasSprite, &mut Speed), With<Player>>,
+    mut query_player: Query<
+        (
+            &mut Transform,
+            &TextureAtlasSprite,
+            &mut Speed,
+            &mut Life,
+            &mut CollisionReady,
+        ),
+        With<Player>,
+    >,
     query_ground: Query<&Transform, (With<Ground>, Without<Player>)>,
 ) {
-    // For each boat
-    for (mut player_tf, sprite, mut speed) in query_player.iter_mut() {
-        // retrieve boat dimensions
-        let boat_dimensions = sprite.custom_size.unwrap();
-        let dx = boat_dimensions[0] / 2.;
-        let dy = boat_dimensions[1] / 2.;
-        let boat_max_dim = boat_dimensions[0].max(boat_dimensions[1]);
+    let (mut player_tf, sprite, mut speed, mut life, mut collision_ready) =
+        query_player.single_mut();
 
-        // Compute relevants points of the boat skull
-        let front_left_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, dy, 0.));
-        let front_right_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, -dy, 0.));
-        let middle_left_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., dy, 0.));
-        let middle_right_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., -dy, 0.));
-        let rear_left_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, dy, 0.));
-        let rear_right_pt =
-            player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, -dy, 0.));
-        // Compute relevants segments of the boat skull
-        let front = LineSegment {
-            from: point(front_left_pt[0], front_left_pt[1]),
-            to: point(front_right_pt[0], front_right_pt[1]),
-        };
-        let rear = LineSegment {
-            from: point(front_left_pt[0], front_left_pt[1]),
-            to: point(front_right_pt[0], front_right_pt[1]),
-        };
-        let front_left = LineSegment {
-            from: point(middle_left_pt[0], middle_left_pt[1]),
-            to: point(front_left_pt[0], front_left_pt[1]),
-        };
-        let front_right = LineSegment {
-            from: point(middle_right_pt[0], middle_right_pt[1]),
-            to: point(front_right_pt[0], front_right_pt[1]),
-        };
-        let rear_left = LineSegment {
-            from: point(middle_left_pt[0], middle_left_pt[1]),
-            to: point(rear_left_pt[0], rear_left_pt[1]),
-        };
-        let rear_right = LineSegment {
-            from: point(middle_right_pt[0], middle_right_pt[1]),
-            to: point(rear_right_pt[0], rear_right_pt[1]),
+    // retrieve boat dimensions
+    let boat_dimensions = sprite.custom_size.unwrap();
+    let dx = boat_dimensions[0] / 2.;
+    let dy = boat_dimensions[1] / 2.;
+    let boat_max_dim = boat_dimensions[0].max(boat_dimensions[1]);
+
+    // Compute relevants points of the boat skull
+    let front_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, dy, 0.));
+    let front_right_pt =
+        player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(dx, -dy, 0.));
+    let middle_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., dy, 0.));
+    let middle_right_pt =
+        player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(0., -dy, 0.));
+    let rear_left_pt = player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, dy, 0.));
+    let rear_right_pt =
+        player_tf.translation + player_tf.rotation.mul_vec3(Vec3::new(-dx, -dy, 0.));
+
+    // Compute relevants segments of the boat skull
+    let front = LineSegment {
+        from: point(front_left_pt[0], front_left_pt[1]),
+        to: point(front_right_pt[0], front_right_pt[1]),
+    };
+    let rear = LineSegment {
+        from: point(front_left_pt[0], front_left_pt[1]),
+        to: point(front_right_pt[0], front_right_pt[1]),
+    };
+    let front_left = LineSegment {
+        from: point(middle_left_pt[0], middle_left_pt[1]),
+        to: point(front_left_pt[0], front_left_pt[1]),
+    };
+    let front_right = LineSegment {
+        from: point(middle_right_pt[0], middle_right_pt[1]),
+        to: point(front_right_pt[0], front_right_pt[1]),
+    };
+    let rear_left = LineSegment {
+        from: point(middle_left_pt[0], middle_left_pt[1]),
+        to: point(rear_left_pt[0], rear_left_pt[1]),
+    };
+    let rear_right = LineSegment {
+        from: point(middle_right_pt[0], middle_right_pt[1]),
+        to: point(rear_right_pt[0], rear_right_pt[1]),
+    };
+
+    // For each ground tile, check for collision
+    for ground_tf in query_ground.iter() {
+        // Quickly filter out obvious non-overlap
+        let collision = collide(
+            player_tf.translation,
+            Vec2::splat(boat_max_dim),
+            ground_tf.translation,
+            Vec2::new(16., 16.),
+        );
+        if collision.is_none() {
+            continue;
         };
 
-        // For each ground tile, check for collision
-        for ground_tf in query_ground.iter() {
-            // Quickly filter out obvious non-overlap
-            let collision = collide(
-                player_tf.translation,
-                Vec2::splat(boat_max_dim),
-                ground_tf.translation,
-                Vec2::new(16., 16.),
-            );
-            if collision.is_none() {
-                continue;
-            };
+        // Compute segments of the ground tile
+        let mut tile_segments = Vec::new();
+        tile_segments.push(LineSegment {
+            from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
+            to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
+        });
+        tile_segments.push(LineSegment {
+            from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
+            to: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
+        });
+        tile_segments.push(LineSegment {
+            from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
+            to: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
+        });
+        tile_segments.push(LineSegment {
+            from: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
+            to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
+        });
 
-            // Compute segments of the ground tile
-            let mut tile_segments = Vec::new();
-            tile_segments.push(LineSegment {
-                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
-                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
-            });
-            tile_segments.push(LineSegment {
-                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
-                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
-            });
-            tile_segments.push(LineSegment {
-                from: vec_to_point(&(ground_tf.translation + Vec3::new(-8., -8., 0.))),
-                to: vec_to_point(&(ground_tf.translation + Vec3::new(-8., 8., 0.))),
-            });
-            tile_segments.push(LineSegment {
-                from: vec_to_point(&(ground_tf.translation + Vec3::new(8., -8., 0.))),
-                to: vec_to_point(&(ground_tf.translation + Vec3::new(8., 8., 0.))),
-            });
+        // Conpute collisions of the boat & tile
+        let front_collision = check_collision(&front, &tile_segments);
+        let rear_collision = check_collision(&rear, &tile_segments);
+        let front_left_collision = check_collision(&front_left, &tile_segments);
+        let front_right_collision = check_collision(&front_right, &tile_segments);
+        let rear_left_collision = check_collision(&rear_left, &tile_segments);
+        let rear_right_collision = check_collision(&rear_right, &tile_segments);
 
-            // Conpute collisions of the boat & tile
-            let front_collision = check_collision(&front, &tile_segments);
-            let rear_collision = check_collision(&rear, &tile_segments);
-            let front_left_collision = check_collision(&front_left, &tile_segments);
-            let front_right_collision = check_collision(&front_right, &tile_segments);
-            let rear_left_collision = check_collision(&rear_left, &tile_segments);
-            let rear_right_collision = check_collision(&rear_right, &tile_segments);
+        // Change boat's speed & rotation accordingly
+        if front_collision || front_left_collision || front_right_collision {
+            speed.0 = speed.0.min(0.);
+        }
+        if rear_collision || rear_left_collision || rear_right_collision {
+            speed.0 = speed.0.max(0.);
+        }
+        let mut delta_rotate = 0.;
+        if front_left_collision || rear_right_collision {
+            delta_rotate -= BOAT_ROTATION_SPEED * TIME_STEP;
+        }
+        if front_right_collision || rear_left_collision {
+            delta_rotate += BOAT_ROTATION_SPEED * TIME_STEP;
+        }
+        player_tf.rotate(Quat::from_rotation_z(delta_rotate));
 
-            // Change boat's speed & rotation accordingly
-            if front_collision || front_left_collision || front_right_collision {
-                speed.0 = speed.0.min(0.);
+        // Decrease player life (once for a given collision)
+        // TODO: player should have X seconds before to loose life again.
+        if front_collision
+            || rear_collision
+            || front_left_collision
+            || front_right_collision
+            || rear_left_collision
+            || rear_right_collision
+        {
+            if collision_ready.0 {
+                life.0 -= life.0.min(10);
+                collision_ready.0 = false;
             }
-            if rear_collision || rear_left_collision || rear_right_collision {
-                speed.0 = speed.0.max(0.);
-            }
-            let mut delta_rotate = 0.;
-            if front_left_collision || rear_right_collision {
-                delta_rotate -= BOAT_ROTATION_SPEED * TIME_STEP;
-            }
-            if front_right_collision || rear_left_collision {
-                delta_rotate += BOAT_ROTATION_SPEED * TIME_STEP;
-            }
-            player_tf.rotate(Quat::from_rotation_z(delta_rotate));
+        } else {
+            collision_ready.0 = true;
         }
     }
-}
-
-/// Check collision of a segment with a group of segments
-fn check_collision(seg: &LineSegment<f32>, segs: &Vec<LineSegment<f32>>) -> bool {
-    for tile_seg in segs {
-        if seg.intersects(tile_seg) {
-            return true;
-        }
-    }
-    false
-}
-
-/// Utility to convert from Vec3 to Point.
-fn vec_to_point(vec: &Vec3) -> Point<f32> {
-    point(vec[0], vec[1])
 }
 
 //
