@@ -405,16 +405,19 @@ fn player_ground_collision(
         to: point(rear_right_pt[0], rear_right_pt[1]),
     };
 
+    let mut collision = false;
+
     // For each ground tile, check for collision
     for ground_tf in query_ground.iter() {
+        
         // Quickly filter out obvious non-overlap
-        let collision = collide(
+        let collision_square = collide(
             player_tf.translation,
             Vec2::splat(boat_max_dim),
             ground_tf.translation,
             Vec2::new(16., 16.),
         );
-        if collision.is_none() {
+        if collision_square.is_none() {
             continue;
         };
 
@@ -461,22 +464,22 @@ fn player_ground_collision(
         }
         player_tf.rotate(Quat::from_rotation_z(delta_rotate));
 
-        // Decrease player life (once for a given collision)
-        // TODO: player should have X seconds before to loose life again.
-        if front_collision
+        collision |= front_collision
             || rear_collision
             || front_left_collision
             || front_right_collision
             || rear_left_collision
-            || rear_right_collision
-        {
-            if collision_ready.0 {
-                life.0 -= life.0.min(10);
-                collision_ready.0 = false;
-            }
-        } else {
-            collision_ready.0 = true;
+            || rear_right_collision;
+    }
+
+    // Decrease life in case of 'new' collision.
+    if collision {
+        if collision_ready.0 {
+            life.0 -= life.0.min(10);
+            collision_ready.0 = false;
         }
+    } else {
+        collision_ready.0 = true;
     }
 }
 
