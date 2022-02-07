@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 use bevy_kira_audio::Audio;
 
@@ -22,12 +24,14 @@ const CANON_MIN_DISTANCE: f32 = 60.;
 const CANON_MAX_DISTANCE: f32 = 500.;
 const CANON_ROTATION_SPEED: f32 = std::f32::consts::PI / 2.;
 const CANON_DISTANCE_SPEED: f32 = 100.;
+const CANON_RELOAD: u64 = 2;
 
 const TORPEDO_INIT_ANGLE: f32 = 0.;
 const TORPEDO_SIGHT_DIST: f32 = 48.;
+const TORPEDO_RELOAD: u64 = 5;
 
-pub const AMUNITIONS: u32 = 100;
-pub const TORPEDOS: u32 = 30;
+pub const AMUNITIONS: u32 = 50;
+pub const TORPEDOS: u32 = 15;
 pub const LIFE: u32 = 100;
 
 //
@@ -63,16 +67,10 @@ pub struct Speed(pub f32);
 struct Canon;
 
 #[derive(Component)]
-struct CanonReadyFire(bool);
-
-#[derive(Component)]
 struct CanonSight(f32);
 
 #[derive(Component)]
 struct TorpedoSight;
-
-#[derive(Component)]
-struct TorpedoReadyFire(bool);
 
 #[derive(Component)]
 struct CollisionReady(bool);
@@ -129,7 +127,7 @@ fn player_spawn(
                     ..Default::default()
                 })
                 .insert(CanonSight(CANON_MIN_DISTANCE))
-                .insert(CanonReadyFire(true))
+                .insert(Timer::from_seconds(0.0, false))
                 .insert(Amunitions(AMUNITIONS));
         })
         // Torpedo sight
@@ -146,7 +144,7 @@ fn player_spawn(
                     ..Default::default()
                 })
                 .insert(TorpedoSight)
-                .insert(TorpedoReadyFire(true))
+                .insert(Timer::from_seconds(0.0, false))
                 .insert(Torpedos(TORPEDOS));
         });
 }
@@ -245,23 +243,23 @@ fn canon_fire(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
     audio: Res<Audio>,
+    time: Res<Time>,
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform, With<Player>>,
     mut query_sight: Query<
-        (
-            &Parent,
-            &GlobalTransform,
-            &mut CanonReadyFire,
-            &mut Amunitions,
-        ),
+        (&Parent, &GlobalTransform, &mut Amunitions, &mut Timer),
         With<CanonSight>,
     >,
 ) {
-    let (parent, canon_sight_gtf, mut ready_fire, mut amunitions) = query_sight.single_mut();
-    if ready_fire.0 && kb.pressed(KeyCode::Space) {
-        let boat_gtf = query_boat.get(parent.0).unwrap();
+    let (parent, canon_sight_gtf, mut amunitions, mut timer) = query_sight.single_mut();
+    // Increment timer measuring time to reload.
+    timer.tick(time.delta());
+
+    // If ready to fire, amunitions left and key pressed, trigger fire.
+    if timer.finished() && amunitions.0 > 0 && kb.pressed(KeyCode::Space) {
         // Compute origin and energy of canonball.
+        let boat_gtf = query_boat.get(parent.0).unwrap();
         let x_dest = canon_sight_gtf.translation.x;
         let y_dest = canon_sight_gtf.translation.y;
         let x_org = boat_gtf.translation.x;
@@ -288,12 +286,9 @@ fn canon_fire(
         );
         // Decrease number of amunitions.
         amunitions.0 -= 1;
-        // Player will have to release key to fire again.
-        ready_fire.0 = false;
-    }
-    // No automatic fire: the key must be released before next shot.
-    if kb.just_released(KeyCode::Space) {
-        ready_fire.0 = true;
+        // Player will have to wait for reload to fire again.
+        timer.set_duration(Duration::from_secs(CANON_RELOAD));
+        timer.reset();
     }
 }
 
@@ -301,23 +296,23 @@ fn torpedo_fire(
     mut commands: Commands,
     kb: Res<Input<KeyCode>>,
     audio: Res<Audio>,
+    time: Res<Time>,
     sprite_materials: Res<SpriteMaterials>,
     audio_materials: Res<AudioMaterials>,
     query_boat: Query<&GlobalTransform, With<Player>>,
     mut query_sight: Query<
-        (
-            &Parent,
-            &GlobalTransform,
-            &mut TorpedoReadyFire,
-            &mut Torpedos,
-        ),
+        (&Parent, &GlobalTransform, &mut Torpedos, &mut Timer),
         With<TorpedoSight>,
     >,
 ) {
-    let (parent, torpedo_sight_gtf, mut ready_fire, mut torpedos) = query_sight.single_mut();
-    if ready_fire.0 && kb.pressed(KeyCode::Return) {
-        let boat_gtf = query_boat.get(parent.0).unwrap();
+    let (parent, torpedo_sight_gtf, mut torpedos, mut timer) = query_sight.single_mut();
+    // Increment timer measuring time to reload.
+    timer.tick(time.delta());
+
+    // If ready to fire, amunitions left and key pressed, trigger fire.
+    if timer.finished() && torpedos.0 > 0 && kb.pressed(KeyCode::Return) {
         // Spawn the torpedos
+        let boat_gtf = query_boat.get(parent.0).unwrap();
         for angle in [-0.1, 0., 0.1] {
             commands
                 .spawn_bundle(SpriteSheetBundle {
@@ -345,12 +340,9 @@ fn torpedo_fire(
         );
         // Decrease number of torpedos
         torpedos.0 -= 1;
-        // Player will have to release key to fire again
-        ready_fire.0 = false;
-    }
-    // No automatic fire: the key must be released before next shot.
-    if kb.just_released(KeyCode::Return) {
-        ready_fire.0 = true;
+        // Player will have to wait for reload to fire again.
+        timer.set_duration(Duration::from_secs(TORPEDO_RELOAD));
+        timer.reset();
     }
 }
 

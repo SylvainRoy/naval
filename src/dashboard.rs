@@ -1,4 +1,4 @@
-use crate::player::{Amunitions, Life, Speed, Player, Torpedos, AMUNITIONS, LIFE, TORPEDOS};
+use crate::player::{Amunitions, Life, Player, Speed, Torpedos, AMUNITIONS, LIFE, TORPEDOS};
 use bevy::prelude::*;
 
 //
@@ -44,7 +44,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     font_size: 15.0,
                     color: Color::BLACK,
                 },
-                Default::default()
+                Default::default(),
             ),
             ..Default::default()
         })
