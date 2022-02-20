@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use bevy_kira_audio::{AudioChannel, AudioSource};
 
-pub const TIME_STEP: f32 = 1. / 30.;
-
 // Layers to position the sprites
 pub const WEAPON_Z: f32 = 6.;
 pub const PROJECTILE_Z: f32 = 5.;

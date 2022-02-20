@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
-use crate::common::{WinSize, TIME_STEP};
+use crate::common::WinSize;
 use crate::explosion::ExplosionToSpawn;
 use crate::island::Ground;
 
@@ -21,6 +21,7 @@ pub struct Torpedo;
 
 fn torpedo_movement(
     mut commands: Commands,
+    time: Res<Time>,
     win_size: Res<WinSize>,
     mut query: Query<(Entity, &mut Transform), With<Torpedo>>,
 ) {
@@ -29,7 +30,7 @@ fn torpedo_movement(
         let translation =
             torpedo_tf
                 .rotation
-                .mul_vec3(Vec3::new(TORPEDO_SPEED * TIME_STEP, 0., 0.));
+                .mul_vec3(Vec3::new(TORPEDO_SPEED * time.delta_seconds(), 0., 0.));
         torpedo_tf.translation += translation;
         // Remove torpedo if off screen.
         if (torpedo_tf.translation.y < -0.5 * win_size.h)

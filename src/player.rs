@@ -152,26 +152,27 @@ fn player_spawn(
 fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     audio: Res<Audio>,
+    time: Res<Time>,
     audio_materials: Res<AudioMaterials>,
     mut query: Query<(&mut Speed, &mut Transform, With<Player>)>,
 ) {
     if let Ok((mut speed, mut transform, _)) = query.get_single_mut() {
         //Determine new direction of the boat.
         let delta_angle = if keyboard_input.pressed(KeyCode::A) {
-            BOAT_ROTATION_SPEED * TIME_STEP
+            BOAT_ROTATION_SPEED * time.delta_seconds()
         } else if keyboard_input.pressed(KeyCode::D) {
-            -BOAT_ROTATION_SPEED * TIME_STEP
+            -BOAT_ROTATION_SPEED * time.delta_seconds()
         } else {
             0.
         };
         transform.rotate(Quat::from_rotation_z(delta_angle));
         // Determine new position of the boat.
         speed.0 = if keyboard_input.pressed(KeyCode::W) {
-            (speed.0 + BOAT_ACCELERATION * TIME_STEP).min(BOAT_MAX_SPEED_FORWARD)
+            (speed.0 + BOAT_ACCELERATION * time.delta_seconds()).min(BOAT_MAX_SPEED_FORWARD)
         } else if keyboard_input.pressed(KeyCode::S) {
-            (speed.0 - BOAT_ACCELERATION * TIME_STEP).max(BOAT_MAX_SPEED_BACKWARD)
+            (speed.0 - BOAT_ACCELERATION * time.delta_seconds()).max(BOAT_MAX_SPEED_BACKWARD)
         } else {
-            speed.0 - BOAT_FRICTION * speed.0.abs().copysign(speed.0) * TIME_STEP
+            speed.0 - BOAT_FRICTION * speed.0.abs().copysign(speed.0) * time.delta_seconds()
         };
         let translation = transform.rotation.mul_vec3(Vec3::new(speed.0, 0., 0.));
         transform.translation += translation;
@@ -186,20 +187,21 @@ fn player_movement(
 
 fn canon_movement(
     keyboard_input: Res<Input<KeyCode>>,
+    time: Res<Time>,
     mut query: Query<(&mut Transform, &mut CanonSight)>,
 ) {
     // Determine new parameters of the canon.
     let delta_angle = if keyboard_input.pressed(KeyCode::J) {
-        CANON_ROTATION_SPEED * TIME_STEP
+        CANON_ROTATION_SPEED * time.delta_seconds()
     } else if keyboard_input.pressed(KeyCode::L) {
-        -CANON_ROTATION_SPEED * TIME_STEP
+        -CANON_ROTATION_SPEED * time.delta_seconds()
     } else {
         0.
     };
     let delta_distance = if keyboard_input.pressed(KeyCode::I) {
-        CANON_DISTANCE_SPEED * TIME_STEP
+        CANON_DISTANCE_SPEED * time.delta_seconds()
     } else if keyboard_input.pressed(KeyCode::K) {
-        -CANON_DISTANCE_SPEED * TIME_STEP
+        -CANON_DISTANCE_SPEED * time.delta_seconds()
     } else {
         0.
     };
@@ -218,13 +220,14 @@ fn canon_movement(
 
 fn torpedo_sight_movement(
     keyboard_input: Res<Input<KeyCode>>,
+    time: Res<Time>,
     mut query: Query<&mut Transform, With<TorpedoSight>>,
 ) {
     // Determine new parameters of the torpedo sight.
     let delta_angle = if keyboard_input.pressed(KeyCode::U) {
-        CANON_ROTATION_SPEED * TIME_STEP
+        CANON_ROTATION_SPEED * time.delta_seconds()
     } else if keyboard_input.pressed(KeyCode::O) {
-        -CANON_ROTATION_SPEED * TIME_STEP
+        -CANON_ROTATION_SPEED * time.delta_seconds()
     } else {
         0.
     };
@@ -347,6 +350,7 @@ fn torpedo_fire(
 }
 
 fn player_ground_collision(
+    time: Res<Time>,
     mut query_player: Query<
         (
             &mut Transform,
@@ -457,10 +461,10 @@ fn player_ground_collision(
         }
         let mut delta_rotate = 0.;
         if front_left_collision || rear_right_collision {
-            delta_rotate -= BOAT_ROTATION_SPEED * TIME_STEP;
+            delta_rotate -= BOAT_ROTATION_SPEED * time.delta_seconds();
         }
         if front_right_collision || rear_left_collision {
-            delta_rotate += BOAT_ROTATION_SPEED * TIME_STEP;
+            delta_rotate += BOAT_ROTATION_SPEED * time.delta_seconds();
         }
         player_tf.rotate(Quat::from_rotation_z(delta_rotate));
 

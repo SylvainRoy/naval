@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::{prelude::*, sprite::collide_aabb::collide};
 
-use crate::common::{WinSize, TIME_STEP};
+use crate::common::WinSize;
 use crate::explosion::ExplosionToSpawn;
 use crate::island::Mountain;
 
@@ -24,13 +24,14 @@ pub struct Energy(pub f32);
 
 fn canonball_movement(
     mut commands: Commands,
+    time: Res<Time>,
     win_size: Res<WinSize>,
     mut query: Query<(Entity, &mut Transform, &mut Energy, With<CanonBall>)>,
 ) {
     for (canonball_entity, mut canonball_tf, mut energy, _) in query.iter_mut() {
         if energy.0 != 0. {
             // Move canonball according to energy left.
-            let distance = energy.0.min(CANONBALL_SPEED * TIME_STEP);
+            let distance = energy.0.min(CANONBALL_SPEED * time.delta_seconds());
             energy.0 -= distance;
             let translation = canonball_tf.rotation.mul_vec3(Vec3::new(distance, 0., 0.));
             canonball_tf.translation += translation;
